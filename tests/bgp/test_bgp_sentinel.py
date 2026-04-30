@@ -174,8 +174,9 @@ def is_from_routemap_deny_all(duthost, routemap_name):
         "vtysh -c 'show route-map {}' 2>/dev/null".format(routemap_name),
         module_ignore_errors=True,
     )
-    output = result.get("stdout", "")
-    return "permit" not in output
+    if result['rc'] != 0 or not result.get("stdout", "").strip():
+        return False
+    return "permit" not in result["stdout"]
 
 
 def add_route_to_dut_lo(ptfhost, spine_bp_addr, lo_ipv4_addr, lo_ipv6_addr, is_ipv6_only=False, ptf_bp_v6=None):
@@ -505,7 +506,8 @@ def bgp_community(sentinel_community, request):
 
 
 @pytest.fixture(scope="module", params=['IPv4', 'IPv6'])
-def prepare_bgp_sentinel_routes(rand_selected_dut, common_setup_teardown, bgp_community, from_deny_all, request, tbinfo):
+def prepare_bgp_sentinel_routes(rand_selected_dut, common_setup_teardown,
+                                bgp_community, from_deny_all, request, tbinfo):
     duthost = rand_selected_dut
     ptfip, lo_ipv4_addr, lo_ipv6_addr, ipv4_nh, ipv6_nh, ibgp_sessions, ptf_bp_v4, ptf_bp_v6 = common_setup_teardown
     is_ipv6_only = is_ipv6_only_topology(tbinfo)
